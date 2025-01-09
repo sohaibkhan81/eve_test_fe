@@ -20,7 +20,7 @@ const Result = () => {
       try {
         const response = await axios.get('https://your-api-url.com/data', {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`, // Pass token in header
+            Authorization: `Bearer ${localStorage.getItem('authToken')}`, 
           },
           params: {
             page: pagination.page,
@@ -29,7 +29,7 @@ const Result = () => {
             date_range: filters.date_range,
           },
         });
-        setData(response.data); // Assuming the response data is an array
+        setData(response.data); 
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
