@@ -1,0 +1,10 @@
+.main-layout {
+  .content-area {
+    margin-left: 250px; 
+    margin-top: 56px; 
+    margin-bottom: 40px; 
+    overflow-y: auto;
+    height: calc(100vh - 56px - 40px);
+    padding: 1rem; 
+  }
+}
