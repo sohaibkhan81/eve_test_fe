@@ -12,14 +12,13 @@ const Login = () => {
   const navigate = useNavigate(); // Hook to navigate to different routes
 
   const initialValues = {
-    email: "",
+    username: "",
     password: "",
   };
 
   const validationSchema = Yup.object({
-    email: Yup.string()
-      .email("Invalid email address")
-      .required("Email is required"),
+    username: Yup.string()
+      .required("Username is required"),
     password: Yup.string()
       .min(6, "Password must be at least 6 characters")
       .required("Password is required"),
@@ -28,18 +27,17 @@ const Login = () => {
   const handleSubmit = async (values, { setSubmitting }) => {
     setLoading(true);
     try {
-      // Make API request for login
-      const response = await axios.post("http://localhost:8080/api/login", values);
+      const response = await axios.post("https://eve-backend.mrashid-te.workers.dev/user/login", values);
 
-      // Handle success
-      if (response.status === 200) {
-        message.success("Login successful!");
-        navigate("/"); // Redirect to home page
+      if (response.data.status === "success") {
+        message.success( response.data.message ||"Login successful!");
+        localStorage.setItem("authToken", response.data.token)
+        navigate("/");
       }
     } catch (error) {
       // Handle error from backend
       if (error.response && error.response.data && error.response.data.message) {
-        message.error(error.response.data.message); // Display backend error message
+        message.error(error.response.data.message); 
       } else {
         message.error("An unexpected error occurred.");
       }
@@ -64,19 +62,19 @@ const Login = () => {
             <Form>
               <div className="mb-4">
                 <label
-                  htmlFor="email"
+                  htmlFor="text"
                   className="block text-gray-700 font-medium"
                 >
-                  Email
+                  Username
                 </label>
                 <Field
-                  name="email"
+                  name="username"
                   as={Input}
-                  placeholder="Enter your email"
+                  placeholder="Enter your username"
                   className="w-full"
                 />
                 <ErrorMessage
-                  name="email"
+                  name="username"
                   component="div"
                   className="text-red-500 text-sm mt-1"
                 />

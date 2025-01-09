@@ -18,21 +18,18 @@ const Navbar = () => {
         <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
           <span className="navbar-toggler-icon"></span>
         </button>
-        <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav">
-            <li className="nav-item">
-              <Link className="nav-link" to="/">Home</Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/about">About</Link>
-            </li>
+        <div className="" id="">
+        <ul className="navbar-nav">
             {localStorage.getItem('authToken') && (
               <li className="nav-item">
-                <button className="nav-link btn btn-link" onClick={handleLogout}>
+                <button className="nav-link btn btn-primary" onClick={handleLogout}>
                   Logout
                 </button>
               </li>
             )}
+          </ul>
+          <ul className="navbar-nav">
+            
           </ul>
         </div>
       </div>

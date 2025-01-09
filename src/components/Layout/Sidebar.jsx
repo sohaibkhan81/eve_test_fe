@@ -10,9 +10,9 @@ const Sidebar = () => {
             to="/"
             className={({ isActive }) =>
               isActive ? 'nav-link active-link' : 'nav-link'
-            }
+             }
           >
-            Home
+            Upload Image 
           </NavLink>
         </li>
         <li className="list-group-item">

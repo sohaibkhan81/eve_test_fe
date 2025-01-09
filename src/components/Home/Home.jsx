@@ -5,6 +5,7 @@ import axios from "axios";
 import { Input, Button, Upload, Typography, Card, message } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "../../helper/axiosHelper";
 
 const { Title, Text } = Typography;
 
@@ -40,33 +41,23 @@ const Home = () => {
     formData.append("description", values.description);
     formData.append("image", values.image);
   
-    // Retrieve the token from localStorage (or any other storage method)
-    const token = localStorage.getItem("token"); // Adjust this line based on where your token is stored
-  
     try {
-      const response = await axios.post(
-        "http://localhost:3000/api/upload",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`, // Add token to the headers
-          },
-        }
-      );
+      const response = await axiosInstance.post("image/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data", 
+        },
+      });
+  
       console.log("Upload successful", response.data);
   
-      // Show success message from backend response
       message.success(response.data.message || "Upload successful!");
   
-      // Redirect to results page
       navigate("/results");
   
       resetForm();
     } catch (error) {
       console.error("Upload failed", error);
   
-      // Show error message from backend response
       const errorMessage = error.response?.data?.message || "Upload failed. Please try again.";
       message.error(errorMessage);
     } finally {

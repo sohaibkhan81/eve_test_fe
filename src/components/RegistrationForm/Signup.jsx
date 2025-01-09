@@ -2,13 +2,14 @@ import React, { useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { Input, Button, Card, Typography, message } from "antd";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const { Title } = Typography;
 
 const Signup = () => {
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate()
 
   const initialValues = {
     username: "",
@@ -36,18 +37,32 @@ const Signup = () => {
     setLoading(true);
     try {
       const { confirmPassword, ...payload } = values;
-      const response = await axios.post("http://localhost:8080/api/signup", payload);
 
-      // Handle success
-      if (response.status === 200) {
-        message.success("Signup successful! Please check your email to verify your account.");
+      const response = await axios.post(
+        "https://eve-backend.mrashid-te.workers.dev/user/signup",
+        payload
+      );
+
+      if (response.data.status === "success") {
+        message.success(response.data.message);
         resetForm();
+        navigate("/login");
+        
       }
     } catch (error) {
-      // Handle error from backend
-      if (error.response && error.response.data && error.response.data.message) {
-        message.error(error.response.data.message); // Display backend error message
+      if (error.response) {
+        if (error.response.data && error.response.data.errors) {
+          const errorMessages = error.response.data.errors.join(", ");
+          message.error(` ${errorMessages}`);
+        } else if (error.response.data && error.response.data.message) {
+          message.error(error.response.data.message);
+        } else {
+          message.error("An unexpected error occurred.");
+        }
+      } else if (error.request) {
+        message.error("Network error. Please try again later.");
       } else {
+        // Catch any other errors that might occu
         message.error("An unexpected error occurred.");
       }
     } finally {
@@ -70,7 +85,10 @@ const Signup = () => {
           {({ isSubmitting }) => (
             <Form>
               <div className="mb-4">
-                <label htmlFor="username" className="block text-gray-700 font-medium">
+                <label
+                  htmlFor="username"
+                  className="block text-gray-700 font-medium"
+                >
                   Username
                 </label>
                 <Field
@@ -86,7 +104,10 @@ const Signup = () => {
                 />
               </div>
               <div className="mb-4">
-                <label htmlFor="email" className="block text-gray-700 font-medium">
+                <label
+                  htmlFor="email"
+                  className="block text-gray-700 font-medium"
+                >
                   Email
                 </label>
                 <Field
@@ -102,7 +123,10 @@ const Signup = () => {
                 />
               </div>
               <div className="mb-4">
-                <label htmlFor="password" className="block text-gray-700 font-medium">
+                <label
+                  htmlFor="password"
+                  className="block text-gray-700 font-medium"
+                >
                   Password
                 </label>
                 <Field
@@ -118,7 +142,10 @@ const Signup = () => {
                 />
               </div>
               <div className="mb-4">
-                <label htmlFor="confirmPassword" className="block text-gray-700 font-medium">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-gray-700 font-medium"
+                >
                   Confirm Password
                 </label>
                 <Field

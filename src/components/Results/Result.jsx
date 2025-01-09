@@ -1,52 +1,52 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Modal, Button, Input, DatePicker, Row, Col } from 'antd';
-import axios from 'axios';
+import { Table, Modal, Button, Input, DatePicker, Row, Col, Select } from 'antd';
+import axiosInstance from '../../helper/axiosHelper';
 import moment from 'moment';
 
 const { RangePicker } = DatePicker;
+const { Option } = Select;
 
 const Result = () => {
-  const [data, setData] = useState([]); // To store the fetched data
-  const [loading, setLoading] = useState(true); // To show loading spinner
-  const [previewVisible, setPreviewVisible] = useState(false); // To control modal visibility
-  const [previewImage, setPreviewImage] = useState(''); // To store the image URL for preview
-  const [pagination, setPagination] = useState({ page: 1, limit: 10 }); // Pagination state
-  const [filters, setFilters] = useState({ status: '', date_range: '' }); // Filters state
+  const [data, setData] = useState([]); 
+  const [loading, setLoading] = useState(true); 
+  const [previewVisible, setPreviewVisible] = useState(false); 
+  const [previewImage, setPreviewImage] = useState(''); 
+  const [pagination, setPagination] = useState({ page: 1, limit: 10 }); 
+  const [filters, setFilters] = useState({ status: '', date_range: '', image_type: '' }); 
 
-  // Fetch data from the API when the component mounts or when pagination/filters change
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
+      setLoading(true); 
       try {
-        const response = await axios.get('https://your-api-url.com/data', {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`, 
-          },
+        const response = await axiosInstance.get('data', {
           params: {
             page: pagination.page,
             limit: pagination.limit,
             status: filters.status,
             date_range: filters.date_range,
+            image_type: filters.image_type, // Add image type filter
           },
         });
-        setData(response.data); 
+
+        setData(response.data);
       } catch (error) {
         console.error('Error fetching data:', error);
+        if (error.response && error.response.status === 401) {
+          console.log('Session expired. Please log in again.');
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchData(); 
   }, [pagination, filters]);
 
-  // Handle image click to show the preview
   const handleImageClick = (imageUrl) => {
     setPreviewImage(imageUrl);
-    setPreviewVisible(true); // Show modal
+    setPreviewVisible(true); 
   };
 
-  // Handle pagination change
   const handlePaginationChange = (page, pageSize) => {
     setPagination({ page, limit: pageSize });
   };
@@ -70,6 +70,12 @@ const Result = () => {
         date_range: '',
       });
     }
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setFilters({ status: '', date_range: '', image_type: '' });
+    setPagination({ page: 1, limit: 10 }); // Reset pagination to first page
   };
 
   // Columns for the Ant Design Table
@@ -97,17 +103,21 @@ const Result = () => {
   ];
 
   return (
-    <div className="container mt-2">
-      <h1 className="font-bold">Results</h1>
+    <div className="container mt-2 shadow p-1">
+      <h4 className="font-bold">Results</h4>
 
       {/* Filter Section */}
-      <Row gutter={16} className="mb-4">
+      <Row gutter={16} className="mb-5">
         <Col span={6}>
-          <Input
+          <Select
             placeholder="Filter by Status"
             value={filters.status}
-            onChange={(e) => handleFilterChange(e.target.value, 'status')}
-          />
+            onChange={(value) => handleFilterChange(value, 'status')}
+            style={{ width: '100%' }}
+          >
+            <Option value="processing">Processing</Option>
+            <Option value="completed">Completed</Option>
+          </Select>
         </Col>
         <Col span={6}>
           <RangePicker
@@ -126,8 +136,20 @@ const Result = () => {
           />
         </Col>
         <Col span={6}>
-          <Button type="primary" onClick={() => setPagination({ ...pagination, page: 1 })}>
-            Apply Filters
+          <Select
+            placeholder="Filter by Image Type"
+            value={filters.image_type}
+            onChange={(value) => handleFilterChange(value, 'image_type')}
+            style={{ width: '100%' }}
+          >
+            <Option value="png">PNG</Option>
+            <Option value="jpg">JPG</Option>
+            <Option value="jpeg">JPEG</Option>
+          </Select>
+        </Col>
+        <Col span={6}>
+          <Button type="default" onClick={clearFilters}>
+            Clear All Filters
           </Button>
         </Col>
       </Row>

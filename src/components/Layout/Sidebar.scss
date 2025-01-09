@@ -20,11 +20,13 @@
           padding: 10px ;
           color: #000; /* Default link color */
           text-decoration: none;
+          font-weight: bold;
           border-radius: 5px; /* Rounded corners for links */
           transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transitions */
   
           &:hover {
             font-weight: 700;
+            color: #007bff;
           }
   
           &.active-link {
