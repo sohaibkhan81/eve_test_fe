@@ -6,7 +6,7 @@ import moment from 'moment';
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
-const DEFAULT_FILTERS = { status: '', date_range: '', fileType: '' };
+const DEFAULT_FILTERS = { status: '', date_range: '', fileType: '', search: '' };
 const DEFAULT_PAGINATION = { page: 1, limit: 10 };
 const Result = () => {
   const [data, setData] = useState([]); 
@@ -26,6 +26,7 @@ const Result = () => {
           params: {
             fileType: filters.fileType,
             status: filters.status,
+            search: filters.search,
             page: pagination.page,
             limit: pagination.limit,
             date_range: filters.date_range,
@@ -58,10 +59,8 @@ const Result = () => {
             message.error(data.message || 'An unexpected error occurred.');
           }
         } else if (error.request) {
-          // Network or server issues
           message.error('Network error. Please check your internet connection.');
         } else {
-          // Other unexpected errors
           message.error('An unexpected error occurred. Please try again.');
         }
       } finally {
@@ -100,6 +99,10 @@ const Result = () => {
         date_range: '',
       });
     }
+  };
+
+  const handleSearchChange = (e) => {
+    setFilters({ ...filters, search: e.target.value });
   };
 
   const clearFilters = () => {
@@ -151,7 +154,7 @@ const Result = () => {
 
       {/* Filter Section */}
       <Row gutter={16} className="mb-5">
-        <Col span={6}>
+        <Col span={4}>
           <Select
             placeholder="Filter by Status"
             value={filters.status}
@@ -178,7 +181,7 @@ const Result = () => {
             allowClear
           />
         </Col>
-        <Col span={6}>
+        <Col span={4}>
           <Select
             placeholder="Filter by Image Type"
             value={filters.fileType}
@@ -189,6 +192,13 @@ const Result = () => {
             <Option value="jpg">JPG</Option>
             <Option value="jpeg">JPEG</Option>
           </Select>
+        </Col>
+        <Col span={4}>
+          <Input
+            placeholder="Search by Name or Description"
+            value={filters.search}
+            onChange={handleSearchChange}
+          />
         </Col>
         <Col span={6}>
           <Button type="default" onClick={clearFilters}>

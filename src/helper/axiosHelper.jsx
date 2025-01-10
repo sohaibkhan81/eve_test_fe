@@ -1,3 +1,4 @@
+import { message } from 'antd';
 import axios from 'axios';
 
 const axiosInstance = axios.create({
@@ -24,14 +25,15 @@ axiosInstance.interceptors.request.use(
 );
 
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (response) => response, 
+  
   (error) => {
+
     if (error.response && error.response.status === 401) {
-      console.error('Unauthorized request, token might be expired');
+      message.error("Session expired. Please log in again.");
+      localStorage.removeItem("authToken"); 
+      window.location.href = "/login"; 
     }
-
-    console.error('Response Error:', error);
-
     return Promise.reject(error);
   }
 );
