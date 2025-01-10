@@ -40,6 +40,8 @@ const Home = () => {
     formData.append("title", values.title);
     formData.append("description", values.description);
     formData.append("image", values.image);
+    console.log("formData", formData);
+    
   
     try {
       const response = await axiosInstance.post("image/upload", formData, {
@@ -48,7 +50,7 @@ const Home = () => {
         },
       });
   
-      // console.log("Upload successful", response.data);
+      console.log("Upload successful", response.data);
   
       message.success(response.data.message || "Upload successful!");
   

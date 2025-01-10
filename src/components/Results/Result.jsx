@@ -1,26 +1,43 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Table, Modal, Button, Input, DatePicker, Row, Col, Select, message } from 'antd';
 import axiosInstance from '../../helper/axiosHelper';
 import moment from 'moment';
+import { debounce } from 'lodash'; // Use lodash debounce
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
 const DEFAULT_FILTERS = { status: '', date_range: '', fileType: '', search: '' };
 const DEFAULT_PAGINATION = { page: 1, limit: 10 };
-const Result = () => {
-  const [data, setData] = useState([]); 
-  const [loading, setLoading] = useState(true); 
-  const [previewVisible, setPreviewVisible] = useState(false); 
-  const [previewImage, setPreviewImage] = useState(''); 
-  const [pagination, setPagination] = useState(DEFAULT_PAGINATION); // Pagination state
-  const [filters, setFilters] = useState(DEFAULT_FILTERS); // Filter state
-  const [totalRecords, setTotalRecords] = useState(0); 
 
+const Result = () => {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewImage, setPreviewImage] = useState('');
+  const [pagination, setPagination] = useState(DEFAULT_PAGINATION);
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [totalRecords, setTotalRecords] = useState(0);
+
+  const cancelTokenSource = useRef(null); // Ref to store cancel token
+
+  // Debounced search handler
+  const handleSearchChange = debounce((e) => {
+    setFilters({ ...filters, search: e.target.value });
+  }, 500); // 500ms debounce time
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true); 
+      setLoading(true);
+
+      // Cancel the previous request if it exists
+      if (cancelTokenSource.current) {
+        cancelTokenSource.current.cancel('Operation canceled due to new request.');
+      }
+
+      // Create a new cancel token for the current request
+      cancelTokenSource.current = axios.CancelToken.source();
+
       try {
         const response = await axiosInstance.get('/image/analysis', {
           params: {
@@ -31,62 +48,58 @@ const Result = () => {
             limit: pagination.limit,
             date_range: filters.date_range,
           },
+          cancelToken: cancelTokenSource.current.token, // Attach cancel token
         });
-        // console.log(response.data.data);
-        
-  
+
         const { images, pagination: apiPagination } = response.data.data;
-  
-        // Update state with API response
         setData(images || []);
         setTotalRecords(parseInt(apiPagination.totalCount, 10));
-  
-        message.success(response.data.message);
+
+        // message.success(response.data.message);
       } catch (error) {
-        console.error('Error fetching data:', error);
-  
-        // Handle specific API error responses
-        if (error.response) {
-          const { status, data } = error.response;
-  
-          if (status === 401) {
-            message.error('Session expired. Please log in again.');
-          } else if (status === 404) {
-            message.error('No data found for the given filters.');
-          } else if (status === 500) {
-            message.error('Internal server error. Please try again later.');
-          } else {
-            message.error(data.message || 'An unexpected error occurred.');
-          }
-        } else if (error.request) {
-          message.error('Network error. Please check your internet connection.');
+        // Handle errors, including canceled requests
+        if (axios.isCancel(error)) {
+          console.log('Request canceled:', error.message);
         } else {
-          message.error('An unexpected error occurred. Please try again.');
+          console.error('Error fetching data:', error);
+          if (error.response) {
+            const { status, data } = error.response;
+            if (status === 401) {
+              message.error('Session expired. Please log in again.');
+            } else if (status === 404) {
+              message.error('No data found for the given filters.');
+            } else if (status === 500) {
+              message.error('Internal server error. Please try again later.');
+            } else {
+              message.error(data.message || 'An unexpected error occurred.');
+            }
+          } else if (error.request) {
+            message.error('Network error. Please check your internet connection.');
+          } else {
+            message.error('An unexpected error occurred. Please try again.');
+          }
         }
       } finally {
         setLoading(false);
       }
     };
-  
+
     fetchData();
   }, [pagination, filters]);
-  
 
   const handleImageClick = (imageUrl) => {
     setPreviewImage(imageUrl);
-    setPreviewVisible(true); 
+    setPreviewVisible(true);
   };
 
   const handlePaginationChange = (page, pageSize) => {
     setPagination({ page, limit: pageSize });
   };
 
-  // Handle filter changes
   const handleFilterChange = (value, key) => {
     setFilters({ ...filters, [key]: value });
   };
 
-  // Handle Date Range change
   const handleDateRangeChange = (dates, dateStrings) => {
     if (dates && dates.length === 2) {
       setFilters({
@@ -101,15 +114,11 @@ const Result = () => {
     }
   };
 
-  const handleSearchChange = (e) => {
-    setFilters({ ...filters, search: e.target.value });
-  };
-
   const clearFilters = () => {
     setFilters(DEFAULT_FILTERS);
-    setPagination(DEFAULT_PAGINATION); 
+    setPagination(DEFAULT_PAGINATION);
   };
-  // Columns for the Ant Design Table
+
   const columns = [
     {
       title: 'File Name',
