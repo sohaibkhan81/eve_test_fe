@@ -100,6 +100,7 @@ const Result = () => {
 
   // Handle search button click
   const handleSearchClick = () => {
+    setPagination({ ...pagination, page: 1 });
     fetchData(); // Trigger the API call when search button is clicked
   };
 
