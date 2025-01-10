@@ -14,6 +14,8 @@ import {
 import axiosInstance from "../../helper/axiosHelper";
 import moment from "moment";
 import axios from "axios";
+import { CheckCircleOutlined, HourglassOutlined } from "@ant-design/icons";
+
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -145,11 +147,32 @@ const Result = () => {
       dataIndex: "file_type",
       key: "file_type",
     },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-    },
+
+{
+  title: "Status",
+  dataIndex: "status",
+  key: "status",
+  render: (status) => {
+    console.log("Status value:", status); // Log status for testing
+    return (
+      <span>
+        {status === "processing" && (
+          <>
+            <HourglassOutlined style={{ color: "#faad14", marginRight: 5 }} />
+            Processing
+          </>
+        )}
+        {status === "completed" && (
+          <>
+            <CheckCircleOutlined style={{ color: "#52c41a", marginRight: 5 }} />
+            Completed
+          </>
+        )}
+      </span>
+    );
+  },
+},
+
     {
       title: "Results",
       dataIndex: "result",
