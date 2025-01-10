@@ -252,13 +252,6 @@ const Result = () => {
 
           <Col xs={24} sm={12} md={6}>
             <Button type="default"
-             disabled={
-              loading ||
-              (!filters.status &&
-                !filters.date_range &&
-                !filters.fileType &&
-                !filters.search)
-            }
              onClick={clearFilters}>
               Clear All Filters
             </Button>
