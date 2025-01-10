@@ -10,7 +10,7 @@ import axiosInstance from "../../helper/axiosHelper";
 const { Title, Text } = Typography;
 
 const Home = () => {
-  const navigate = useNavigate(); // Hook to navigate to different routes
+  const navigate = useNavigate(); 
 
   const initialValues = {
     title: "",

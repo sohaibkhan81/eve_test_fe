@@ -1,91 +1,107 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Table, Modal, Button, Input, DatePicker, Row, Col, Select, message } from 'antd';
-import axiosInstance from '../../helper/axiosHelper';
-import moment from 'moment';
-import { debounce } from 'lodash'; // Use lodash debounce
+import React, { useEffect, useState, useRef } from "react";
+import {
+  Table,
+  Modal,
+  Button,
+  Input,
+  DatePicker,
+  Row,
+  Col,
+  Select,
+  message,
+  Form,
+} from "antd";
+import axiosInstance from "../../helper/axiosHelper";
+import moment from "moment";
+import axios from "axios";
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
-const DEFAULT_FILTERS = { status: '', date_range: '', fileType: '', search: '' };
+const DEFAULT_FILTERS = {
+  status: "",
+  date_range: "",
+  fileType: "",
+  search: "",
+};
 const DEFAULT_PAGINATION = { page: 1, limit: 10 };
 
 const Result = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [previewVisible, setPreviewVisible] = useState(false);
-  const [previewImage, setPreviewImage] = useState('');
+  const [previewImage, setPreviewImage] = useState("");
   const [pagination, setPagination] = useState(DEFAULT_PAGINATION);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [totalRecords, setTotalRecords] = useState(0);
 
   const cancelTokenSource = useRef(null); // Ref to store cancel token
 
-  // Debounced search handler
-  const handleSearchChange = debounce((e) => {
-    setFilters({ ...filters, search: e.target.value });
-  }, 500); // 500ms debounce time
+  // API call function
+  const fetchData = async () => {
+    setLoading(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+    if (cancelTokenSource.current) {
+      cancelTokenSource.current.cancel(
+        "Operation canceled due to new request."
+      );
+    }
 
-      // Cancel the previous request if it exists
-      if (cancelTokenSource.current) {
-        cancelTokenSource.current.cancel('Operation canceled due to new request.');
-      }
+    cancelTokenSource.current = axios.CancelToken.source();
 
-      // Create a new cancel token for the current request
-      cancelTokenSource.current = axios.CancelToken.source();
+    try {
+      const response = await axiosInstance.get("/image/analysis", {
+        params: {
+          fileType: filters.fileType,
+          status: filters.status,
+          search: filters.search,
+          page: pagination.page,
+          limit: pagination.limit,
+          date_range: filters.date_range,
+        },
+        cancelToken: cancelTokenSource.current.token, // Attach cancel token
+      });
 
-      try {
-        const response = await axiosInstance.get('/image/analysis', {
-          params: {
-            fileType: filters.fileType,
-            status: filters.status,
-            search: filters.search,
-            page: pagination.page,
-            limit: pagination.limit,
-            date_range: filters.date_range,
-          },
-          cancelToken: cancelTokenSource.current.token, // Attach cancel token
-        });
-
-        const { images, pagination: apiPagination } = response.data.data;
-        setData(images || []);
-        setTotalRecords(parseInt(apiPagination.totalCount, 10));
-
-        // message.success(response.data.message);
-      } catch (error) {
-        // Handle errors, including canceled requests
-        if (axios.isCancel(error)) {
-          console.log('Request canceled:', error.message);
-        } else {
-          console.error('Error fetching data:', error);
-          if (error.response) {
-            const { status, data } = error.response;
-            if (status === 401) {
-              message.error('Session expired. Please log in again.');
-            } else if (status === 404) {
-              message.error('No data found for the given filters.');
-            } else if (status === 500) {
-              message.error('Internal server error. Please try again later.');
-            } else {
-              message.error(data.message || 'An unexpected error occurred.');
-            }
-          } else if (error.request) {
-            message.error('Network error. Please check your internet connection.');
+      const { images, pagination: apiPagination } = response.data.data;
+      setData(images || []);
+      setTotalRecords(parseInt(apiPagination.totalCount, 10));
+    } catch (error) {
+      // Handle errors, including canceled requests
+      if (axios.isCancel(error)) {
+        console.log("Request canceled:", error.message);
+      } else {
+        console.error("Error fetching data:", error);
+        if (error.response) {
+          const { status, data } = error.response;
+          if (status === 401) {
+            message.error("Session expired. Please log in again.");
+          } else if (status === 404) {
+            message.error("No data found for the given filters.");
+          } else if (status === 500) {
+            message.error("Internal server error. Please try again later.");
           } else {
-            message.error('An unexpected error occurred. Please try again.');
+            message.error(data.message || "An unexpected error occurred.");
           }
+        } else if (error.request) {
+          message.error(
+            "Network error. Please check your internet connection."
+          );
+        } else {
+          message.error("An unexpected error occurred. Please try again.");
         }
-      } finally {
-        setLoading(false);
       }
-    };
-
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
     fetchData();
-  }, [pagination, filters]);
+  }, [pagination]);
+
+  // Handle search button click
+  const handleSearchClick = () => {
+    fetchData(); // Trigger the API call when search button is clicked
+  };
 
   const handleImageClick = (imageUrl) => {
     setPreviewImage(imageUrl);
@@ -109,7 +125,7 @@ const Result = () => {
     } else {
       setFilters({
         ...filters,
-        date_range: '',
+        date_range: "",
       });
     }
   };
@@ -121,37 +137,41 @@ const Result = () => {
 
   const columns = [
     {
-      title: 'File Name',
-      dataIndex: 'file_name',
-      key: 'file_name',
+      title: "File Name",
+      dataIndex: "file_name",
+      key: "file_name",
     },
     {
-      title: 'Description',
-      dataIndex: 'file_description',
-      key: 'file_description',
+      title: "Description",
+      dataIndex: "file_description",
+      key: "file_description",
     },
     {
-      title: 'Type',
-      dataIndex: 'file_type',
-      key: 'file_type',
+      title: "Type",
+      dataIndex: "file_type",
+      key: "file_type",
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
     },
     {
-      title: 'Results',
-      dataIndex: 'result',
-      key: 'result',
+      title: "Results",
+      dataIndex: "result",
+      key: "result",
     },
     {
-      title: 'Image',
-      dataIndex: 'file_path',
-      key: 'file_path',
+      title: "Image",
+      dataIndex: "file_path",
+      key: "file_path",
       render: (filePath) => (
         <Button onClick={() => handleImageClick(filePath)} type="link">
-          <img src={filePath} alt="Preview" style={{ width: 50, height: 50, objectFit: 'cover' }} />
+          <img
+            src={filePath}
+            alt="Preview"
+            style={{ width: 50, height: 50, objectFit: "cover" }}
+          />
         </Button>
       ),
     },
@@ -159,62 +179,106 @@ const Result = () => {
 
   return (
     <div className="container mt-2 shadow-sm p-1">
-      <h4 className="font-bold">Results</h4>
+      <h4 className="font-bold">Analysis Results</h4>
 
       {/* Filter Section */}
-      <Row gutter={16} className="mb-5">
-        <Col span={4}>
-          <Select
-            placeholder="Filter by Status"
-            value={filters.status}
-            onChange={(value) => handleFilterChange(value, 'status')}
-            style={{ width: '100%' }}
-          >
-            <Option value="processing">Processing</Option>
-            <Option value="completed">Completed</Option>
-          </Select>
-        </Col>
-        <Col span={6}>
-          <RangePicker
-            value={
-              filters.date_range
-                ? [
-                    moment(filters.date_range.split(':')[0]),
-                    moment(filters.date_range.split(':')[1]),
-                  ]
-                : []
+      <Form layout="vertical">
+        <Row gutter={16} className="mb-5">
+          <Col xs={24} sm={12} md={4}>
+            <Form.Item label="Filter by Status">
+              <Select
+              disabled={loading || ""}
+                placeholder="Select a status"
+                value={filters.status || ""}
+                onChange={(value) => handleFilterChange(value, "status")}
+                style={{ width: "100%" }}
+              >
+                <Option value="processing">Processing</Option>
+                <Option value="completed">Completed</Option>
+              </Select>
+            </Form.Item>
+          </Col>
+
+          <Col xs={24} sm={12} md={6}>
+            <Form.Item label="Filter by Date">
+              <RangePicker
+              disabled={loading || ""}
+                value={
+                  filters.date_range
+                    ? [
+                        moment(filters.date_range.split(":")[0]),
+                        moment(filters.date_range.split(":")[1]),
+                      ]
+                    : []
+                }
+                onChange={handleDateRangeChange}
+                format="YYYY-MM-DD"
+                placeholder={["From Date", "To Date"]}
+                allowClear
+                style={{ width: "100%" }}
+              />
+            </Form.Item>
+          </Col>
+
+          <Col xs={24} sm={12} md={4}>
+            <Form.Item label="Filter by Image Type">
+              <Select
+              disabled={loading || ""}
+                placeholder="Filter by Image Type"
+                value={filters.fileType}
+                onChange={(value) => handleFilterChange(value, "fileType")}
+                style={{ width: "100%" }}
+              >
+                <Option value="png">PNG</Option>
+                <Option value="jpg">JPG</Option>
+                <Option value="jpeg">JPEG</Option>
+              </Select>
+            </Form.Item>
+          </Col>
+
+          <Col xs={24} sm={12} md={5}>
+            <Form.Item label="Search by File Name">
+              <Input
+              disabled={loading || ""}
+                placeholder="Search by File Name"
+                value={filters.search}
+                onChange={(e) =>
+                  setFilters({ ...filters, search: e.target.value })
+                }
+                style={{ width: "100%" }}
+              />
+            </Form.Item>
+          </Col>
+
+          <Col xs={24} sm={12} md={6}>
+            <Button type="default"
+             disabled={
+              loading ||
+              (!filters.status &&
+                !filters.date_range &&
+                !filters.fileType &&
+                !filters.search)
             }
-            onChange={handleDateRangeChange}
-            format="YYYY-MM-DD"
-            placeholder={['From Date', 'To Date']}
-            allowClear
-          />
-        </Col>
-        <Col span={4}>
-          <Select
-            placeholder="Filter by Image Type"
-            value={filters.fileType}
-            onChange={(value) => handleFilterChange(value, 'fileType')}
-            style={{ width: '100%' }}
-          >
-            <Option value="png">PNG</Option>
-            <Option value="jpg">JPG</Option>
-            <Option value="jpeg">JPEG</Option>
-          </Select>
-        </Col>
-        <Col span={4}>
-          <Input
-            placeholder="Search by Name or Description"
-            value={filters.search}
-            onChange={handleSearchChange}
-          />
-        </Col>
-        <Col span={6}>
-          <Button type="default" onClick={clearFilters}>
-            Clear All Filters
-          </Button>
-        </Col>
-      </Row>
+             onClick={clearFilters}>
+              Clear All Filters
+            </Button>
+            <Button
+              type="primary"
+              disabled={
+                loading ||
+                (!filters.status &&
+                  !filters.date_range &&
+                  !filters.fileType &&
+                  !filters.search)
+              }
+              onClick={handleSearchClick}
+              style={{ marginLeft: 10 }}
+            >
+              Search
+            </Button>
+          </Col>
+        </Row>
+      </Form>
 
       {/* Table */}
       <Table
@@ -237,7 +301,7 @@ const Result = () => {
       >
         <img
           alt="Preview"
-          style={{ width: '100%', height: 'auto' }}
+          style={{ width: "100%", height: "auto" }}
           src={previewImage}
         />
       </Modal>
