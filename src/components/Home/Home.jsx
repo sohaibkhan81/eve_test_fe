@@ -48,7 +48,7 @@ const Home = () => {
         },
       });
   
-      console.log("Upload successful", response.data);
+      // console.log("Upload successful", response.data);
   
       message.success(response.data.message || "Upload successful!");
   

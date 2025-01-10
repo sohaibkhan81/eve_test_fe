@@ -1,46 +1,77 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Modal, Button, Input, DatePicker, Row, Col, Select } from 'antd';
+import { Table, Modal, Button, Input, DatePicker, Row, Col, Select, message } from 'antd';
 import axiosInstance from '../../helper/axiosHelper';
 import moment from 'moment';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
+const DEFAULT_FILTERS = { status: '', date_range: '', fileType: '' };
+const DEFAULT_PAGINATION = { page: 1, limit: 10 };
 const Result = () => {
   const [data, setData] = useState([]); 
   const [loading, setLoading] = useState(true); 
   const [previewVisible, setPreviewVisible] = useState(false); 
   const [previewImage, setPreviewImage] = useState(''); 
-  const [pagination, setPagination] = useState({ page: 1, limit: 10 }); 
-  const [filters, setFilters] = useState({ status: '', date_range: '', image_type: '' }); 
+  const [pagination, setPagination] = useState(DEFAULT_PAGINATION); // Pagination state
+  const [filters, setFilters] = useState(DEFAULT_FILTERS); // Filter state
+  const [totalRecords, setTotalRecords] = useState(0); 
+
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true); 
       try {
-        const response = await axiosInstance.get('data', {
+        const response = await axiosInstance.get('/image/analysis', {
           params: {
+            fileType: filters.fileType,
+            status: filters.status,
             page: pagination.page,
             limit: pagination.limit,
-            status: filters.status,
             date_range: filters.date_range,
-            image_type: filters.image_type, // Add image type filter
           },
         });
-
-        setData(response.data);
+        // console.log(response.data.data);
+        
+  
+        const { images, pagination: apiPagination } = response.data.data;
+  
+        // Update state with API response
+        setData(images || []);
+        setTotalRecords(parseInt(apiPagination.totalCount, 10));
+  
+        message.success(response.data.message);
       } catch (error) {
         console.error('Error fetching data:', error);
-        if (error.response && error.response.status === 401) {
-          console.log('Session expired. Please log in again.');
+  
+        // Handle specific API error responses
+        if (error.response) {
+          const { status, data } = error.response;
+  
+          if (status === 401) {
+            message.error('Session expired. Please log in again.');
+          } else if (status === 404) {
+            message.error('No data found for the given filters.');
+          } else if (status === 500) {
+            message.error('Internal server error. Please try again later.');
+          } else {
+            message.error(data.message || 'An unexpected error occurred.');
+          }
+        } else if (error.request) {
+          // Network or server issues
+          message.error('Network error. Please check your internet connection.');
+        } else {
+          // Other unexpected errors
+          message.error('An unexpected error occurred. Please try again.');
         }
       } finally {
         setLoading(false);
       }
     };
-
-    fetchData(); 
+  
+    fetchData();
   }, [pagination, filters]);
+  
 
   const handleImageClick = (imageUrl) => {
     setPreviewImage(imageUrl);
@@ -64,7 +95,6 @@ const Result = () => {
         date_range: `${dateStrings[0]}:${dateStrings[1]}`,
       });
     } else {
-      // If the user clears the date range, reset the filter
       setFilters({
         ...filters,
         date_range: '',
@@ -72,38 +102,51 @@ const Result = () => {
     }
   };
 
-  // Clear all filters
   const clearFilters = () => {
-    setFilters({ status: '', date_range: '', image_type: '' });
-    setPagination({ page: 1, limit: 10 }); // Reset pagination to first page
+    setFilters(DEFAULT_FILTERS);
+    setPagination(DEFAULT_PAGINATION); 
   };
-
   // Columns for the Ant Design Table
   const columns = [
     {
-      title: 'Title',
-      dataIndex: 'title',
-      key: 'title',
+      title: 'File Name',
+      dataIndex: 'file_name',
+      key: 'file_name',
     },
     {
       title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
+      dataIndex: 'file_description',
+      key: 'file_description',
+    },
+    {
+      title: 'Type',
+      dataIndex: 'file_type',
+      key: 'file_type',
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+    },
+    {
+      title: 'Results',
+      dataIndex: 'result',
+      key: 'result',
     },
     {
       title: 'Image',
-      dataIndex: 'image',
-      key: 'image',
-      render: (imageUrl) => (
-        <Button onClick={() => handleImageClick(imageUrl)} type="link">
-          <img src={imageUrl} alt="Preview" style={{ width: 50, height: 50, objectFit: 'cover' }} />
+      dataIndex: 'file_path',
+      key: 'file_path',
+      render: (filePath) => (
+        <Button onClick={() => handleImageClick(filePath)} type="link">
+          <img src={filePath} alt="Preview" style={{ width: 50, height: 50, objectFit: 'cover' }} />
         </Button>
       ),
     },
   ];
 
   return (
-    <div className="container mt-2 shadow p-1">
+    <div className="container mt-2 shadow-sm p-1">
       <h4 className="font-bold">Results</h4>
 
       {/* Filter Section */}
@@ -138,8 +181,8 @@ const Result = () => {
         <Col span={6}>
           <Select
             placeholder="Filter by Image Type"
-            value={filters.image_type}
-            onChange={(value) => handleFilterChange(value, 'image_type')}
+            value={filters.fileType}
+            onChange={(value) => handleFilterChange(value, 'fileType')}
             style={{ width: '100%' }}
           >
             <Option value="png">PNG</Option>
@@ -163,12 +206,11 @@ const Result = () => {
         pagination={{
           current: pagination.page,
           pageSize: pagination.limit,
-          total: data.total, // Assuming the API returns the total number of records
+          total: totalRecords,
           onChange: handlePaginationChange,
         }}
       />
 
-      {/* Modal for image preview */}
       <Modal
         visible={previewVisible}
         footer={null}
