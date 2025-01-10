@@ -41,15 +41,8 @@ const Result = () => {
   const fetchData = async () => {
     setLoading(true);
 
-    if (cancelTokenSource.current) {
-      cancelTokenSource.current.cancel(
-        "Operation canceled due to new request."
-      );
-    }
-
-    cancelTokenSource.current = axios.CancelToken.source();
-
     try {
+      setLoading(true);
       const response = await axiosInstance.get("/image/analysis", {
         params: {
           fileType: filters.fileType,
@@ -59,14 +52,14 @@ const Result = () => {
           limit: pagination.limit,
           date_range: filters.date_range,
         },
-        cancelToken: cancelTokenSource.current.token, // Attach cancel token
+       
       });
 
       const { images, pagination: apiPagination } = response.data.data;
       setData(images || []);
       setTotalRecords(parseInt(apiPagination.totalCount, 10));
+      setLoading(false);
     } catch (error) {
-      // Handle errors, including canceled requests
       if (axios.isCancel(error)) {
         console.log("Request canceled:", error.message);
       } else {
@@ -258,6 +251,7 @@ const Result = () => {
             </Button>
             <Button
               type="primary"
+              loading={loading}
               disabled={
                 loading ||
                 (!filters.status &&
